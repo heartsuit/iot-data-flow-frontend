@@ -3,6 +3,7 @@ import HomeView from '../views/HomeView.vue'
 import ElementUIDemo from '../views/ElementUIDemo.vue'
 import AxiosDemo from '../views/AxiosDemo.vue'
 import EchartsDemo from '../views/EchartsDemo.vue'
+import PowerView from '../views/PowerView.vue'
 
 const routes = [
   {
@@ -32,6 +33,11 @@ const routes = [
     path: '/echarts',
     name: 'EchartsDemo',
     component: EchartsDemo
+  },
+  {
+    path: '/power',
+    name: 'PowerView',
+    component: PowerView
   }
 ]
 
