@@ -76,7 +76,7 @@
       width="60%"
       destroy-on-close
     >
-      <el-tabs type="card">
+      <el-tabs type="card" @tab-click="handleClick">
         <el-tab-pane label="历史数据">
           <div style="text-align: right">
             <el-date-picker
@@ -127,6 +127,9 @@
           >
           </el-pagination>
         </el-tab-pane>
+        <el-tab-pane label="数据统计" lazy>
+          <power-trend v-if="showChart" :sn="sn"></power-trend
+        ></el-tab-pane>
       </el-tabs>
     </el-dialog>
   </div>
@@ -138,6 +141,7 @@ import Loading from "../components/Loading.vue";
 import axios from "axios";
 import { formatTime } from "../utils/util";
 import { Timer } from "@element-plus/icons";
+import PowerTrend from "../components/PowerTrend.vue";
 
 export default defineComponent({
   name: "PowerView",
@@ -266,15 +270,15 @@ export default defineComponent({
   },
   components: {
     Loading,
-    Timer
+    Timer,
+    PowerTrend,
   },
   created() {
     this.getTotal();
     this.getTotalInCity(this.thisCity);
     this.getLastValue(this.thisCity);
   },
-  mounted() {
-  },
+  mounted() {},
   methods: {
     formatTime,
 
@@ -407,6 +411,22 @@ export default defineComponent({
         this.getDeviceData();
       }
     },
+    handleClick(tab, event) {
+      console.log(tab);
+      console.log(tab.props.label);
+      console.log(event);
+      // console.log(1, Object.entries(tab));
+      // console.log(2, Object.values(tab));
+      if (tab.props.label == "数据统计") {
+        this.showChart = true;
+      }
+    },
+
+    // handleCloseDialog(done){
+    //   console.log("handleCloseDialog", done);
+    //   this.showChart=false;
+    //   done();
+    // }
   }
 });
 </script>
