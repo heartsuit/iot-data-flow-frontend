@@ -90,6 +90,15 @@
               end-placeholder="结束日期"
             >
             </el-date-picker>
+            <el-button
+              type="primary"
+              icon="el-icon-download"
+              @click="exportXls"
+              style="margin-left: 10px"
+              size="small"
+              :loading="exportLoading"
+              >导出</el-button
+            >
           </div>
 
           <el-table v-loading="dataLoading" :data="deviceDataPage.records">
@@ -411,6 +420,63 @@ export default defineComponent({
         this.getDeviceData();
       }
     },
+    exportXls: function () {
+      if (this.deviceDataPage.records.length == 0) {
+        this.$message({
+          type: "warning",
+          message: "暂无数据",
+          center: false,
+          showClose: true,
+        });
+        return;
+      }
+      if (!this.dateRange) {
+        this.$message({
+          type: "error",
+          message: "请选择时间范围！",
+          showClose: true,
+        });
+        return;
+      }
+      this.exportLoading = true;
+
+      let startTime = this.dateRange[0];
+      let endTime = this.dateRange[1];
+
+      let that = this;
+      axios
+        .get(
+          `/api/power/exportXls?sn=${this.sn}&startTime=${startTime}&endTime=${endTime}`,
+          { responseType: "blob" }
+        )
+        .then(
+          function (res) {
+            if (res.status == 200) {
+              that.exportLoading = false;
+              let blob = new Blob([res.data]);
+              let downloadElement = document.createElement("a");
+              let href = window.URL.createObjectURL(blob);
+              downloadElement.href = href;
+              downloadElement.download = decodeURI(
+                res.headers["content-disposition"].substr(
+                  "attachment; filename=".length
+                )
+              );
+              document.body.appendChild(downloadElement);
+              downloadElement.click();
+              document.body.removeChild(downloadElement);
+              window.URL.revokeObjectURL(href);
+            } else {
+              that.exportLoading = false;
+              console.error(res);
+            }
+          },
+          function (res) {
+            that.exportLoading = false;
+            console.error(res);
+          }
+        );
+    },
     handleClick(tab, event) {
       console.log(tab);
       console.log(tab.props.label);
@@ -427,7 +493,7 @@ export default defineComponent({
     //   this.showChart=false;
     //   done();
     // }
-  }
+  },
 });
 </script>
 
