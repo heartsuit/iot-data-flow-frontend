@@ -286,8 +286,12 @@ export default defineComponent({
     this.getTotal();
     this.getTotalInCity(this.thisCity);
     this.getLastValue(this.thisCity);
+    this.connectWS(this.thisCity);
   },
-  mounted() {},
+  mounted() {
+    // 绑定监听
+    window.addEventListener("beforeunload", (e) => this.closeWebSocket(e));
+  },
   methods: {
     formatTime,
 
@@ -303,6 +307,7 @@ export default defineComponent({
       console.log(13, this.thisCity);
       this.getLastValue(this.thisCity);
       this.getTotalInCity(this.thisCity);
+      this.closeWebSocket({ msg: "切换城市" });
     },
 
     getTotal: function () {
@@ -420,6 +425,82 @@ export default defineComponent({
         this.getDeviceData();
       }
     },
+
+    connectWS: function (city) {
+      if (typeof WebSocket === "undefined") {
+        this.$message({
+          type: "warning",
+          message: "当前浏览器不支持WebSocket",
+          showClose: true,
+        });
+      } else {
+        let url = `ws://localhost:8888/ws/${city}?req=ok`;
+        this.websocket = new WebSocket(url);
+        this.websocket.onopen = this.open;
+        this.websocket.onerror = this.error;
+        this.websocket.onmessage = this.message;
+        this.websocket.onclose = this.close;
+      }
+    },
+    open: function () {
+      console.log("WebSocket Connected successfully~");
+    },
+    error: function (e) {
+      console.log("WebSocket Error: " + JSON.stringify(e));
+    },
+    message: function (msg) {
+      console.log("WebSocket Message: ", msg.data);
+      let newData = JSON.parse(msg.data);
+
+      // 告警信息
+      if (newData["startsAt"]) {
+        this.$notify({
+          title: newData.startsAt,
+          message: newData.annotations.summary,
+          type: "warning",
+        });
+        return;
+      }
+
+      newData["hasNew"] = true;
+      let updateIndex = Number.MAX_VALUE;
+      for (let i = 0; i < this.tableNames.length; i++) {
+        if (this.tableNames[i] == "device" + newData["sn"]) {
+          updateIndex = i;
+          break;
+        }
+      }
+      if (updateIndex != Number.MAX_VALUE) {
+        // add class
+        newData["hasNew"] = true;
+        this.powers[updateIndex] = newData;
+        console.log("2", this.powers[updateIndex]["hasNew"]);
+
+        this.$nextTick(function () {
+          newData["hasNew"] = false;
+          this.powers[updateIndex] = newData;
+          // this.powers.splice(updateIndex, 1, newData);
+          console.log("1", this.powers[updateIndex]["hasNew"]);
+        });
+      }
+    },
+    send: function (params) {
+      this.websocket.send(params);
+    },
+    close: function () {
+      console.log("WebSocket Disconnected!");
+      setTimeout(() => {
+        console.log("WebSocket reconnecting...");
+        this.connectWS(this.thisCity);
+      }, 3000);
+    },
+    closeWebSocket: function () {
+      console.log("Closing websocket...");
+      if (this.websocket) {
+        this.websocket.close();
+      }
+    },
+
     exportXls: function () {
       if (this.deviceDataPage.records.length == 0) {
         this.$message({
@@ -493,6 +574,10 @@ export default defineComponent({
     //   this.showChart=false;
     //   done();
     // }
+  },
+
+  beforeUnmount() {
+    window.removeEventListener("beforeunload", (e) => this.closeWebSocket(e));
   },
 });
 </script>
